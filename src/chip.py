@@ -104,3 +104,26 @@ class Chip(pyglet.window.Window):
     def _1ZZZ(self):
         print("Jumps to address NNN")
         self.pc = self.opcode & 0x0FFF
+
+    def _4ZZZ(self):
+        print("Skips the next instruction if VX doesn't equal NN")
+        if self.gpio[self.vx] != (self.opcode & 0x00FF):
+            self.pc += 2
+
+    def _5ZZZ(self):
+        print("Skips the next instruction if VX equals VY.")
+        if self.gpio[self.vx] == self.gpio[self.vy]:
+            self.pc += 2
+
+    def _8ZZ4(self):
+        print(
+            "Adds vy to vx. vf is set to 1 when there's a carry, and to 0 when there isn't"
+        )
+
+        if self.gpio[self.vx] + self.gpio[self.vy] > 0xFF:
+            self.gpio[0xF] = 1
+        else:
+            self.gpio[0xF] = 0
+
+        self.gpio[self.vx] += self.gpio[self.vy]
+        self.gpio[self.vx] &= 0xFF
