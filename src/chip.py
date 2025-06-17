@@ -14,6 +14,12 @@ class Chip(pyglet.window.Window):
         self.pc = 0
         self.stack = []
         self.fonts = []
+        self.funcmap = {
+            0x0000: self._0ZZZ,  # Extract nibbles
+            0x00E0: self._0ZZ0,  # Clear screen
+            0x00EE: self._0ZZE,  # Return from a subroutine
+            0x1000: self._1ZZZ,  # Jump to address
+        }
 
     def initialize(self) -> None:
         self.clear()
@@ -78,7 +84,7 @@ class Chip(pyglet.window.Window):
 
         # TODO: play sound
 
-    def _0ZZZ(self):
+    def _0ZZZ(self) -> None:
         extracted_op = self.opcode & 0xF0FF
 
         try:
@@ -90,3 +96,11 @@ class Chip(pyglet.window.Window):
         print("Clears the screen")
         self.display_buffer = self._init_list(num=64 * 32)
         self.should_draw = True
+
+    def _0ZZE(self) -> int:
+        print("Returns from the subroutine")
+        self.pc = self.stack.pop()
+
+    def _1ZZZ(self):
+        print("Jumps to address NNN")
+        self.pc = self.opcode & 0x0FFF
