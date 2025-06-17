@@ -35,14 +35,23 @@ class Chip(pyglet.window.Window):
             self.memory[i] = self.fonts[i]
             i += 1
 
-    def clear(self):
-        pass
-
     def init_list(self, num: int) -> list[int]:
         return [0] * num
 
-    def load_rom(self, rom):
-        pass
+    def load_rom(self, rom_file_name: str) -> None:
+        rom_path: str = f"../roms/{rom_file_name}"
+        print(f"Loading... {rom_path}")
+        binary: bytes = open(rom_path, "rb").read()
+        print(binary)
+
+        offset: int = 0x200
+        i: int = 0
+
+        while i < len(binary):
+            self.memory[i + offset] = binary[i]
+            i += 1
+
+        print(self.memory)
 
     def get_fonts(self):
         pass
