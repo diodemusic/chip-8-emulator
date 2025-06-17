@@ -111,7 +111,7 @@ class Chip(pyglet.window.Window):
             self.pc += 2
 
     def _5ZZZ(self):
-        print("Skips the next instruction if VX equals VY.")
+        print("Skips the next instruction if VX equals VY")
         if self.gpio[self.vx] == self.gpio[self.vy]:
             self.pc += 2
 
@@ -126,4 +126,17 @@ class Chip(pyglet.window.Window):
             self.gpio[0xF] = 0
 
         self.gpio[self.vx] += self.gpio[self.vy]
+        self.gpio[self.vx] &= 0xFF
+
+    def _8ZZE(self):
+        print(
+            "vy is subtracted from vx. vf is set to 0 when there's a borrow, and 1 when there isnt"
+        )
+
+        if self.gpio[self.vy] > self.gpio[self.vx]:
+            self.gpio[0xF] = 0
+        else:
+            self.gpio[0xF] = 1
+
+        self.gpio[0xF] = self.gpio[self.vx] - self.gpio[self.vy]
         self.gpio[self.vx] &= 0xFF
