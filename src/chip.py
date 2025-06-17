@@ -77,3 +77,11 @@ class Chip(pyglet.window.Window):
             return
 
         # TODO: play sound
+
+    def _0ZZZ(self):
+        extracted_op = self.opcode & 0xF0FF
+
+        try:
+            self.funcmap[extracted_op]()
+        except Exception as e:
+            print(f"Unkown instruction: {self.opcode}: {e}")
