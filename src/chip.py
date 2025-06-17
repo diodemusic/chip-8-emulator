@@ -85,3 +85,8 @@ class Chip(pyglet.window.Window):
             self.funcmap[extracted_op]()
         except Exception as e:
             print(f"Unkown instruction: {self.opcode}: {e}")
+
+    def _0ZZ0(self) -> None:
+        print("Clears the screen")
+        self.display_buffer = self._init_list(num=64 * 32)
+        self.should_draw = True
