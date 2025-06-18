@@ -13,13 +13,100 @@ class Chip(pyglet.window.Window):
         self.index = 0
         self.pc = 0
         self.stack = []
-        self.fonts = []
+        self.fonts = [
+            0xF0,
+            0x90,
+            0x90,
+            0x90,
+            0xF0,  # 0
+            0x20,
+            0x60,
+            0x20,
+            0x20,
+            0x70,  # 1
+            0xF0,
+            0x10,
+            0xF0,
+            0x80,
+            0xF0,  # 2
+            0xF0,
+            0x10,
+            0xF0,
+            0x10,
+            0xF0,  # 3
+            0x90,
+            0x90,
+            0xF0,
+            0x10,
+            0x10,  # 4
+            0xF0,
+            0x80,
+            0xF0,
+            0x10,
+            0xF0,  # 5
+            0xF0,
+            0x80,
+            0xF0,
+            0x90,
+            0xF0,  # 6
+            0xF0,
+            0x10,
+            0x20,
+            0x40,
+            0x40,  # 7
+            0xF0,
+            0x90,
+            0xF0,
+            0x90,
+            0xF0,  # 8
+            0xF0,
+            0x90,
+            0xF0,
+            0x10,
+            0xF0,  # 9
+            0xF0,
+            0x90,
+            0xF0,
+            0x90,
+            0x90,  # A
+            0xE0,
+            0x90,
+            0xE0,
+            0x90,
+            0xE0,  # B
+            0xF0,
+            0x80,
+            0x80,
+            0x80,
+            0xF0,  # C
+            0xE0,
+            0x90,
+            0x90,
+            0x90,
+            0xE0,  # D
+            0xF0,
+            0x80,
+            0xF0,
+            0x80,
+            0xF0,  # E
+            0xF0,
+            0x80,
+            0xF0,
+            0x80,
+            0x80,  # F
+        ]
         self.funcmap = {
             0x0000: self._0ZZZ,  # Extract nibbles
             0x00E0: self._0ZZ0,  # Clear screen
             0x00EE: self._0ZZE,  # Return from a subroutine
             0x1000: self._1ZZZ,  # Jump to address
+            0x4000: self._4ZZZ,  # Skip next instruction if VX != NN
+            0x5000: self._5ZZZ,  # Skip next instruction if VX == VY
+            0x8004: self._8ZZ4,  # Adds VY to VX, VF is set to 1 when there's a carry, 0 otherwise
+            0x8005: self._8ZZ5,  # VY is subtracted from VX, VF is set to 0 when there's a borrow, 1 otherwise
         }
+        self.vx = 0
+        self.vy = 0
 
     def initialize(self) -> None:
         self.clear()
@@ -48,7 +135,6 @@ class Chip(pyglet.window.Window):
         rom_path: str = f"../roms/{rom_file_name}"
         print(f"Loading... {rom_path}")
         binary: bytes = open(rom_path, "rb").read()
-        print(binary)
 
         offset: int = 0x200
         i: int = 0
@@ -128,7 +214,7 @@ class Chip(pyglet.window.Window):
         self.gpio[self.vx] += self.gpio[self.vy]
         self.gpio[self.vx] &= 0xFF
 
-    def _8ZZE(self):
+    def _8ZZ5(self):
         print(
             "vy is subtracted from vx. vf is set to 0 when there's a borrow, and 1 when there isnt"
         )
@@ -140,3 +226,59 @@ class Chip(pyglet.window.Window):
 
         self.gpio[0xF] = self.gpio[self.vx] - self.gpio[self.vy]
         self.gpio[self.vx] &= 0xFF
+
+    def _DZZZ(self):
+        print("Draw a sprite")
+        self.gpio[0xF] = 0
+        x = self.gpio[self.vx] & 0xFF
+        y = self.gpio[self.vy] & 0xFF
+        height = self.opcode & 0x000F
+        row = 0
+
+        while row < height:
+            curr_row = self.memory[row + self.index]
+            pixel_offset = 0
+
+            while pixel_offset < 8:
+                loc = x + pixel_offset + ((y + row) * 64)
+                pixel_offset += 1
+
+                if (y + row) >= 32 or (x + pixel_offset - 1) >= 64:
+                    continue
+
+                mask = 1 << 8 - pixel_offset
+                curr_pixel = (curr_row & mask) >> (8 - pixel_offset)
+                self.display_buffer[loc] ^= curr_pixel
+
+                if self.display_buffer[loc] == 0:
+                    self.gpio[0xF] = 1
+                else:
+                    self.gpio[0xF] = 0
+
+        row += 1
+        self.should_draw = True
+
+    def draw(self):
+        if self.should_draw:
+            self.clear()
+            # line_counter = 0
+
+            i = 0
+
+            while i < 2048:
+                if self.display_buffer[i] == 1:
+                    self.pixel.blit((i % 64) * 10, 310 - ((i / 64) * 10))
+
+                i += 1
+
+            self.flip()
+            self.should_draw = False
+
+    def main(self):
+        self.initialize()
+        self.load_rom("test.rom")
+
+        while not self.has_exit:
+            self.dispatch_events()
+            self.cycle()
+            self.draw()
